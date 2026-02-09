@@ -1,0 +1,6 @@
+ansible/
+ansible/**
+bootstrap.sh
+README.md
+LICENSE
+.github/

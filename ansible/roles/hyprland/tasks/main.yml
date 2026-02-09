@@ -1,0 +1,28 @@
+---
+# Hyprland + dots-hyprland (end-4)
+# Uses end-4's native installer which auto-detects CachyOS
+#
+# Full list of dependencies: https://github.com/end-4/dots-hyprland
+
+# ── Clone + Install dots-hyprland ─────────────────────────────────
+
+- name: Clone dots-hyprland repository
+  ansible.builtin.git:
+    repo: https://github.com/end-4/dots-hyprland
+    dest: "{{ ansible_facts['env']['HOME'] }}/.cache/dots-hyprland"
+    recursive: yes
+    depth: 1
+    force: yes
+  become: no
+
+# NOTE: The installer runs non-interactively in bootstrap.sh (post-ansible step)
+# via piped stdin: 4x Enter for greeting pauses, then 'n' for auto-confirm.
+
+# ── Services ────────────────────────────────────────────────────────
+
+- name: Enable ydotool service (user scope)
+  ansible.builtin.systemd_service:
+    name: ydotool
+    enabled: true
+    scope: user
+  become: no

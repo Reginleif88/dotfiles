@@ -1,0 +1,55 @@
+---
+# Desktop applications — productivity and media tools
+
+# ── Google Chrome ───────────────────────────────────────────────
+- name: Install Google Chrome
+  kewlfft.aur.aur:
+    name: google-chrome
+    state: present
+  become: no
+
+# ── Zen Browser ─────────────────────────────────────────────────
+# Firefox-based browser — prebuilt binary from AUR
+- name: Install Zen Browser
+  kewlfft.aur.aur:
+    name: zen-browser-bin
+    state: present
+  become: no
+
+# ── Spotify ───────────────────────────────────────────────────────
+# Official launcher — self-updates per-user
+- name: Install Spotify
+  community.general.pacman:
+    name: spotify-launcher
+    state: present
+  become: yes
+
+# ── Draw.io ──────────────────────────────────────────────────────
+# Desktop diagramming app from AUR
+- name: Install draw.io desktop
+  kewlfft.aur.aur:
+    name: drawio-desktop-bin
+    state: present
+  become: no
+
+# ── VLC ──────────────────────────────────────────────────────────
+- name: Install VLC
+  community.general.pacman:
+    name: vlc
+    state: present
+  become: yes
+
+# ── qBittorrent ────────────────────────────────────────────────
+- name: Install qBittorrent
+  community.general.pacman:
+    name: qbittorrent
+    state: present
+  become: yes
+
+# ── Visual Studio Code ───────────────────────────────────────────
+# Proprietary build with full extension support
+- name: Install Visual Studio Code
+  kewlfft.aur.aur:
+    name: visual-studio-code-bin
+    state: present
+  become: no
