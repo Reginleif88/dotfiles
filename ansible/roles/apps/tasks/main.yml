@@ -1,0 +1,53 @@
+---
+# ── Google Chrome ───────────────────────────────────────────────
+- name: Install Google Chrome
+  kewlfft.aur.aur:
+    name: google-chrome
+    state: present
+  become: no
+
+# ── Zen Browser ─────────────────────────────────────────────────
+
+- name: Install Zen Browser
+  kewlfft.aur.aur:
+    name: zen-browser-bin
+    state: present
+  become: no
+
+# ── Spotify ───────────────────────────────────────────────────────
+
+- name: Install Spotify
+  community.general.pacman:
+    name: spotify-launcher
+    state: present
+  become: yes
+
+# ── Draw.io ──────────────────────────────────────────────────────
+
+- name: Install draw.io desktop
+  kewlfft.aur.aur:
+    name: drawio-desktop-bin
+    state: present
+  become: no
+
+# ── VLC ──────────────────────────────────────────────────────────
+- name: Install VLC
+  community.general.pacman:
+    name: vlc
+    state: present
+  become: yes
+
+# ── qBittorrent ────────────────────────────────────────────────
+- name: Install qBittorrent
+  community.general.pacman:
+    name: qbittorrent
+    state: present
+  become: yes
+
+# ── Visual Studio Code ───────────────────────────────────────────
+
+- name: Install Visual Studio Code
+  kewlfft.aur.aur:
+    name: visual-studio-code-bin
+    state: present
+  become: no

@@ -1,0 +1,51 @@
+---
+# ── KVM / QEMU / virt-manager ────────────────────────────────────
+- name: Install KVM and Virtualization Tools
+  community.general.pacman:
+    name:
+      - qemu-full
+      - libvirt
+      - virt-manager
+      - virt-viewer
+      - dnsmasq
+      - edk2-ovmf
+      - swtpm
+    state: present
+  become: yes
+
+- name: Start and Enable libvirtd service
+  ansible.builtin.systemd_service:
+    name: libvirtd
+    state: started
+    enabled: true
+  become: yes
+
+- name: Add user to libvirt group
+  ansible.builtin.user:
+    name: "{{ ansible_facts['user_id'] }}"
+    groups: libvirt
+    append: yes
+  become: yes
+
+# ── Podman ────────────────────────────────────────────────────────
+- name: Install Podman and Podman Compose
+  community.general.pacman:
+    name:
+      - podman
+      - podman-compose
+    state: present
+  become: yes
+
+# ── Winboat ──────────────────────────────────────────────────────
+- name: Install Winboat
+  kewlfft.aur.aur:
+    name: winboat
+    state: present
+  become: no
+
+# ── Remote desktop ───────────────────────────────────────────────
+- name: Install FreeRDP
+  community.general.pacman:
+    name: freerdp
+    state: present
+  become: yes

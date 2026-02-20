@@ -1,0 +1,30 @@
+---
+# ── Suspend / Hibernate ──────────────────────────────────────────
+
+- name: Enable NVIDIA suspend/hibernate/resume services
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    enabled: true
+  loop:
+    - nvidia-suspend.service
+    - nvidia-hibernate.service
+    - nvidia-resume.service
+  become: yes
+
+# ── VRAM preservation ────────────────────────────────────────────
+
+- name: Check if NVIDIA VRAM preservation param already set
+  ansible.builtin.shell: grep -q 'nvidia.NVreg_PreserveVideoMemoryAllocations=1' /etc/default/limine
+  register: nvidia_param_check
+  changed_when: false
+  failed_when: false
+  become: yes
+
+- name: Append NVIDIA VRAM preservation kernel parameter
+  ansible.builtin.lineinfile:
+    path: /etc/default/limine
+    insertafter: '^KERNEL_CMDLINE\[default\]'
+    line: 'KERNEL_CMDLINE[default]+=" nvidia.NVreg_PreserveVideoMemoryAllocations=1"'
+  when: nvidia_param_check.rc != 0
+  notify: Regenerate Limine boot entries
+  become: yes

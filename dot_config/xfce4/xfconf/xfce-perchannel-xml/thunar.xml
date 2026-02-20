@@ -1,0 +1,9 @@
+<?xml version="1.1" encoding="UTF-8"?>
+
+<channel name="thunar" version="1.0">
+  <property name="last-view" type="string" value="ThunarDetailsView"/>
+  <property name="last-window-maximized" type="bool" value="true"/>
+  <property name="last-show-hidden" type="bool" value="true"/>
+  <property name="last-image-preview-visible" type="bool" value="true"/>
+  <property name="last-side-pane" type="string" value="THUNAR_SIDEPANE_TYPE_TREE"/>
+</channel>

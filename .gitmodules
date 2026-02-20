@@ -1,0 +1,3 @@
+[submodule "dot_config/quickshell/quickshell-git"]
+	path = dot_config/quickshell/quickshell-git
+	url = https://aur.archlinux.org/quickshell-git

@@ -1,0 +1,114 @@
+---
+# ── Paru (AUR helper) ──────────────────────────────────────────────
+- name: Allow passwordless pacman for AUR helpers
+  ansible.builtin.copy:
+    dest: /etc/sudoers.d/99-pacman-nopasswd
+    content: "{{ ansible_facts['user_id'] }} ALL=(ALL) NOPASSWD: /usr/bin/pacman"
+    mode: "0440"
+    validate: visudo -cf %s
+  become: yes
+
+# ── System packages ───────────────────────────────────────────────
+- name: Install core packages
+  community.general.pacman:
+    name:
+      - git
+      - curl
+      - wget
+      - htop
+      - vi
+      - python-pip
+      - xdg-user-dirs
+      - starship
+      - ttf-firacode-nerd
+      - cachy-update
+      - network-manager-applet
+      - blueman
+    state: present
+  become: yes
+
+- name: Create XDG user directories
+  ansible.builtin.command: xdg-user-dirs-update
+  become: no
+  changed_when: false
+
+# ── Git identity ──────────────────────────────────────────────────
+- name: Set git user.name
+  community.general.git_config:
+    name: user.name
+    value: Reginleif88
+    scope: global
+  become: no
+
+- name: Set git user.email
+  community.general.git_config:
+    name: user.email
+    value: git@reginleif.io
+    scope: global
+  become: no
+
+# ── Zsh + Oh My Zsh ──────────────────────────────────────────────
+- name: Install zsh
+  community.general.pacman:
+    name: zsh
+    state: present
+  become: yes
+
+- name: Install Oh My Zsh
+  ansible.builtin.git:
+    repo: https://github.com/ohmyzsh/ohmyzsh.git
+    dest: "{{ ansible_facts['env']['HOME'] }}/.oh-my-zsh"
+    depth: 1
+  become: no
+
+- name: Install zsh-autosuggestions
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-autosuggestions
+    dest: "{{ ansible_facts['env']['HOME'] }}/.oh-my-zsh/custom/plugins/zsh-autosuggestions"
+    depth: 1
+  become: no
+
+- name: Install zsh-syntax-highlighting
+  ansible.builtin.git:
+    repo: https://github.com/zsh-users/zsh-syntax-highlighting.git
+    dest: "{{ ansible_facts['env']['HOME'] }}/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting"
+    depth: 1
+  become: no
+
+- name: Set Zsh as the default shell for the current user
+  user:
+    name: "{{ ansible_facts['user_id'] }}"
+    shell: /usr/bin/zsh
+  become: yes
+
+# ── Flatpak + Flathub ────────────────────────────────────────────
+- name: Install Flatpak
+  community.general.pacman:
+    name: flatpak
+    state: present
+  become: yes
+
+- name: Add Flathub repository
+  community.general.flatpak_remote:
+    name: flathub
+    flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+    state: present
+  become: yes
+
+# ── GitHub CLI ────────────────────────────────────────────────────
+- name: Install GitHub CLI
+  community.general.pacman:
+    name: github-cli
+    state: present
+  become: yes
+
+# ── Multimedia codecs ─────────────────────────────────────────────
+- name: Install multimedia codecs
+  community.general.pacman:
+    name:
+      - ffmpeg
+      - gst-plugins-bad
+      - gst-plugins-ugly
+      - gst-libav
+    state: present
+  become: yes

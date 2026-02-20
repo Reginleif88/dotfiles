@@ -1,0 +1,97 @@
+---
+# ── Core components ───────────────────────────────────────────────
+
+- name: Install Hyprland and components
+  community.general.pacman:
+    name:
+      - hyprland
+      - hyprpolkitagent
+      - hyprpaper
+      - mako
+      - hyprlauncher
+      - xdg-desktop-portal-hyprland
+      - thunar
+      - nwg-displays
+      - jq
+      - loupe
+      - qt6-webengine
+    state: present
+  become: yes
+
+# ── Quickshell (patched for QtWebEngine support) ─────────────────
+
+- name: Create quickshell-git build directory
+  ansible.builtin.tempfile:
+    state: directory
+    prefix: quickshell-git-
+  register: qs_builddir
+
+- name: Copy patched quickshell-git PKGBUILD and files
+  ansible.builtin.copy:
+    src: quickshell-git/
+    dest: "{{ qs_builddir.path }}/"
+
+- name: Build and install patched quickshell-git
+  ansible.builtin.command:
+    cmd: makepkg -si --noconfirm
+    chdir: "{{ qs_builddir.path }}"
+
+- name: Clean up quickshell-git build directory
+  ansible.builtin.file:
+    path: "{{ qs_builddir.path }}"
+    state: absent
+
+# ── AUR packages ─────────────────────────────────────────────────
+
+- name: Install components from AUR
+  kewlfft.aur.aur:
+    name:
+      - grimblast-git
+      - cliphist
+      - wl-clipboard
+      - gruvbox-material-gtk-theme-git
+    use: paru
+    state: present
+  become: no
+
+# ── Plugins ──────────────────────────────────────────────────────
+# hyprpm requires a running Hyprland session, so plugin setup is handled by
+# ~/.config/hypr/hyprpm-setup.sh (exec-once) on first boot.
+
+# ── Build tools ───────────────────────────────────────────────────
+
+- name: Install build tools
+  community.general.pacman:
+    name:
+      - cpio
+      - cmake
+    state: present
+  become: yes
+
+# ── Walker (application launcher) ────────────────────────────────
+
+- name: Remove conflicting elephant packages
+  community.general.pacman:
+    name:
+      - elephant
+      - elephant-bin
+    state: absent
+    force: yes
+  become: yes
+  ignore_errors: yes
+
+- name: Install elephant-all-bin (Walker dependency)
+  kewlfft.aur.aur:
+    name:
+      - elephant-all-bin
+    use: paru
+    state: present
+  become: no
+
+- name: Install Walker
+  kewlfft.aur.aur:
+    name:
+      - walker-bin
+    use: paru
+    state: present
+  become: no

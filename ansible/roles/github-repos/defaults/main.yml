@@ -1,0 +1,2 @@
+---
+repos_dir: "{{ ansible_facts['env']['HOME'] }}/Documents"

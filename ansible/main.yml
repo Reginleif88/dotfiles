@@ -1,0 +1,31 @@
+---
+# ── Pre-tasks ─────────────────────────────────────────────────────
+- name: Configure workstation
+  hosts: local
+  vars_files:
+    - vars/secrets.yml
+
+  pre_tasks:
+    - name: Update pacman cache
+      community.general.pacman:
+        update_cache: yes
+      become: yes
+
+    - name: Detect NVIDIA GPU
+      ansible.builtin.shell: lspci | grep -qi nvidia
+      register: nvidia_detected
+      changed_when: false
+      failed_when: false
+
+  # ── Roles ─────────────────────────────────────────────────────────
+  roles:
+    - core
+    - security
+    - role: nvidia
+      when: nvidia_detected.rc == 0
+    - hyprland
+    - virtualisation
+    - games
+    - apps
+    - ai
+    - github-repos

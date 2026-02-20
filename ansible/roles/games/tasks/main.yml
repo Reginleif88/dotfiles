@@ -1,0 +1,61 @@
+---
+# ── Multilib repo (required for Steam) ──────────────────────────
+
+- name: Enable multilib repository
+  ansible.builtin.replace:
+    path: /etc/pacman.conf
+    regexp: '#(\[multilib\])\s*\n#(Include\s*=\s*/etc/pacman\.d/mirrorlist)'
+    replace: '\1\n\2'
+  become: yes
+
+- name: Update pacman cache after enabling multilib
+  community.general.pacman:
+    update_cache: yes
+  become: yes
+
+# ── Steam ────────────────────────────────────────────────────────
+
+- name: Install Steam
+  community.general.pacman:
+    name: steam
+    state: present
+  become: yes
+
+# ── DawnProton (custom Proton build for Steam) ────────────────
+
+- name: Ensure Steam compatibilitytools.d directory exists
+  ansible.builtin.file:
+    path: "{{ ansible_facts['env']['HOME'] }}/.steam/root/compatibilitytools.d"
+    state: directory
+    mode: '0755'
+  become: no
+
+- name: Check if DawnProton is already installed
+  ansible.builtin.stat:
+    path: "{{ ansible_facts['env']['HOME'] }}/.steam/root/compatibilitytools.d/dwproton-10.0-16"
+  register: dwproton_installed
+  become: no
+
+- name: Download DawnProton
+  ansible.builtin.get_url:
+    url: https://dawn.wine/dawn-winery/dwproton/releases/download/dwproton-10.0-16/dwproton-10.0-16-x86_64.tar.xz
+    dest: /tmp/dwproton-10.0-16-x86_64.tar.xz
+  become: no
+  when: not dwproton_installed.stat.exists
+
+- name: Extract DawnProton to Steam compatibilitytools.d
+  ansible.builtin.unarchive:
+    src: /tmp/dwproton-10.0-16-x86_64.tar.xz
+    dest: "{{ ansible_facts['env']['HOME'] }}/.steam/root/compatibilitytools.d"
+    remote_src: yes
+  become: no
+  when: not dwproton_installed.stat.exists
+
+# ── GeForce NOW (Official NVIDIA binary) ───────────────────────
+
+- name: Download GeForce NOW installer to ~/Downloads
+  ansible.builtin.get_url:
+    url: https://international.download.nvidia.com/GFNLinux/GeForceNOWSetup.bin
+    dest: "{{ ansible_facts['env']['HOME'] }}/Downloads/GeForceNOWSetup.bin"
+    mode: '0755'
+  become: no

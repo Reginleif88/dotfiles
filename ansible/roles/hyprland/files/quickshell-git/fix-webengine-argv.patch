@@ -1,0 +1,11 @@
+--- a/src/launch/launch.cpp
++++ b/src/launch/launch.cpp
+@@ -222,7 +222,7 @@
+ 	delete coreApplication;
+
+ 	QGuiApplication* app = nullptr;
+-	auto qArgC = 0;
++	auto qArgC = 1;
+
+ 	if (pragmas.useQApplication) {
+ 		app = new QApplication(qArgC, argv);

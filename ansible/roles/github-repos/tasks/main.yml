@@ -1,0 +1,26 @@
+---
+# ── Authentication ────────────────────────────────────────────────
+- name: Authenticate gh CLI with token
+  ansible.builtin.shell:
+    cmd: echo "{{ github_token }}" | gh auth login --with-token
+  become: no
+  no_log: true
+  changed_when: false
+
+# ── Directory setup ───────────────────────────────────────────────
+- name: Ensure repos directory exists
+  ansible.builtin.file:
+    path: "{{ repos_dir }}"
+    state: directory
+    mode: "0755"
+  become: no
+
+# ── Clone repos ──────────────────────────────────────────────────
+- name: Clone private repos
+  ansible.builtin.command:
+    cmd: "gh repo clone {{ item.repo }} {{ repos_dir }}/{{ item.dest }}"
+    creates: "{{ repos_dir }}/{{ item.dest }}/.git"
+  become: no
+  loop: "{{ github_repos }}"
+  loop_control:
+    label: "{{ item.repo }}"

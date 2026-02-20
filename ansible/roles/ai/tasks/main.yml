@@ -1,0 +1,61 @@
+---
+# ── Claude Code (CLI) ────────────────────────────────────────────
+
+- name: Install Claude Code
+  ansible.builtin.shell: curl -fsSL https://claude.ai/install.sh | bash
+  args:
+    creates: "{{ ansible_facts['env']['HOME'] }}/.claude/local/bin/claude"
+  become: no
+
+# ── NVM + Node.js ────────────────────────────────────────────────
+
+- name: Install NVM
+  ansible.builtin.shell: curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+  args:
+    creates: "{{ ansible_facts['env']['HOME'] }}/.nvm/nvm.sh"
+  become: no
+
+- name: Check if Node.js 25 is installed
+  ansible.builtin.shell: ls -d {{ ansible_facts['env']['HOME'] }}/.nvm/versions/node/v25.* 2>/dev/null
+  register: node25_check
+  changed_when: false
+  failed_when: false
+  become: no
+
+- name: Install Node.js 25 via NVM
+  ansible.builtin.shell: |
+    . "{{ ansible_facts['env']['HOME'] }}/.nvm/nvm.sh"
+    nvm install 25
+  args:
+    executable: /bin/bash
+  when: node25_check.rc != 0
+  become: no
+
+# ── Gemini CLI ───────────────────────────────────────────────────
+
+- name: Check if Gemini CLI is installed
+  ansible.builtin.shell: |
+    . "{{ ansible_facts['env']['HOME'] }}/.nvm/nvm.sh"
+    command -v gemini
+  args:
+    executable: /bin/bash
+  register: gemini_check
+  changed_when: false
+  failed_when: false
+  become: no
+
+- name: Install Gemini CLI
+  ansible.builtin.shell: |
+    . "{{ ansible_facts['env']['HOME'] }}/.nvm/nvm.sh"
+    npm install -g @google/gemini-cli
+  args:
+    executable: /bin/bash
+  when: gemini_check.rc != 0
+  become: no
+
+# ── Bun runtime ──────────────────────────────────────────────────
+- name: Install Bun
+  ansible.builtin.shell: curl -fsSL https://bun.sh/install | bash
+  args:
+    creates: "{{ ansible_facts['env']['HOME'] }}/.bun/bin/bun"
+  become: no

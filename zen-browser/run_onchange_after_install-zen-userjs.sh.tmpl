@@ -1,0 +1,22 @@
+#!/bin/bash
+# zen-browser/user.js hash: {{ include "zen-browser/user.js" | sha256sum }}
+set -euo pipefail
+
+profile_dir=$(echo ~/.config/zen/*.Default*/)
+
+if [ ! -d "$profile_dir" ]; then
+    echo "No Zen profile found, launching headless to generate one..."
+    zen-browser --headless &
+    ZEN_PID=$!
+    sleep 10
+    kill "$ZEN_PID" 2>/dev/null || true
+    profile_dir=$(echo ~/.config/zen/*.Default*/)
+fi
+
+if [ ! -d "$profile_dir" ]; then
+    echo "ERROR: Zen Browser default profile not found after headless launch" >&2
+    exit 1
+fi
+
+cp "{{ .chezmoi.sourceDir }}/zen-browser/user.js" "$profile_dir/user.js"
+echo "Installed user.js to $profile_dir"

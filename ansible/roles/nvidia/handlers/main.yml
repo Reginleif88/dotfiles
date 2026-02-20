@@ -1,0 +1,4 @@
+---
+- name: Regenerate Limine boot entries
+  ansible.builtin.command: limine-mkinitcpio
+  become: yes
