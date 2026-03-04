@@ -31,24 +31,10 @@
     src: quickshell-git/
     dest: "{{ qs_builddir.path }}/"
 
-- name: Install quickshell-git AUR dependencies
-  kewlfft.aur.aur:
-    name:
-      - google-breakpad
-    use: paru
-    state: present
-  become: no
-
-- name: Build patched quickshell-git
+- name: Build and install patched quickshell-git
   ansible.builtin.command:
-    cmd: makepkg -sf --noconfirm
+    cmd: makepkg -si --noconfirm
     chdir: "{{ qs_builddir.path }}"
-  register: qs_build
-
-- name: Install patched quickshell-git package
-  ansible.builtin.shell:
-    cmd: pacman -U --noconfirm {{ qs_builddir.path }}/*.pkg.tar.zst
-  become: yes
 
 - name: Clean up quickshell-git build directory
   ansible.builtin.file:
