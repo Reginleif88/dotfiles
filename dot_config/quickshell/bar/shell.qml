@@ -66,49 +66,21 @@ ShellRoot {
     property var _cpuPrev: null
 
     // ---------------------
-    // Weather state
+    // Weather state (populated from weather.sh script)
     // ---------------------
-    property real weatherTemp: 0
-    property real weatherFeelsLike: 0
-    property int weatherCode: 0
-    property bool weatherIsDay: true
-    property string weatherLat: "48.7306"
-    property string weatherLon: "2.2719"
-    property string weatherLocation: "Massy"
+    property string weatherIcon: ""
+    property string weatherTemp: "0"
+    property string weatherFeelsLike: "0"
+    property color weatherHex: "#8ec07c"
+    property string weatherDesc: ""
     property bool weatherReady: false
     property string weatherError: ""
-    property int weatherImgRevision: 0
-    property string _geoBuf: ""
-    property string _weatherBuf: ""
-
-    function weatherIconForCode(code, isDay) {
-        if (code === 0)
-            return isDay ? { icon: "\uE302", label: "Clear sky" }
-                         : { icon: "\uE32B", label: "Clear night" }
-        if (code === 1 || code === 2)
-            return isDay ? { icon: "\uE303", label: "Partly cloudy" }
-                         : { icon: "\uE379", label: "Partly cloudy" }
-        if (code === 3)
-            return { icon: "\uE312", label: "Overcast" }
-        if (code >= 45 && code <= 48)
-            return { icon: "\uE311", label: "Fog" }
-        if (code >= 51 && code <= 67)
-            return { icon: "\uE318", label: "Rain" }
-        if (code >= 71 && code <= 77)
-            return { icon: "\uE31A", label: "Snow" }
-        if (code >= 80 && code <= 82)
-            return { icon: "\uE318", label: "Rain showers" }
-        if (code >= 85 && code <= 86)
-            return { icon: "\uE31A", label: "Snow showers" }
-        if (code >= 95 && code <= 99)
-            return { icon: "\uE334", label: "Thunderstorm" }
-        return { icon: "\uE302", label: "Unknown" }
-    }
-
-    function shortDayName(isoDate) {
-        var d = new Date(isoDate)
-        return ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"][d.getDay()]
-    }
+    property var weatherForecast: []
+    property int weatherSelectedDay: 0
+    property string _weatherBarBuf: ""
+    property string _weatherJsonBuf: ""
+    readonly property string weatherScript:
+        Qt.resolvedUrl("scripts/weather.sh").toString().replace("file://", "")
 
     // ---------------------
     // Track all PipeWire nodes for full property access
@@ -235,94 +207,71 @@ ShellRoot {
     }
 
     // ---------------------
-    // Geolocation via ipinfo.io
+    // Weather bar data (lightweight, every 15 min)
     // ---------------------
     Process {
-        id: geoProc
-        command: ["curl", "-sf", "--max-time", "10", "https://ipinfo.io/json"]
+        id: weatherBarProc
+        command: ["bash", root.weatherScript, "--bar"]
         stdout: SplitParser {
             onRead: function(line) {
-                root._geoBuf += line
+                root._weatherBarBuf += line
             }
         }
         onExited: function() {
             try {
-                var d = JSON.parse(root._geoBuf)
-                var city = d.city || ""
-                // If IP geolocation returns "Paris", keep Massy defaults
-                // (IP geolocation lumps the whole metro area into Paris)
-                if (city !== "" && city !== "Paris") {
-                    var loc = (d.loc || "").split(",")
-                    if (loc.length === 2) {
-                        root.weatherLat = loc[0]
-                        root.weatherLon = loc[1]
-                        root.weatherLocation = city
-                    }
+                var d = JSON.parse(root._weatherBarBuf)
+                if (d.ready) {
+                    root.weatherIcon = d.icon
+                    root.weatherTemp = String(Math.round(d.temp))
+                    root.weatherFeelsLike = String(Math.round(d.feels_like))
+                    root.weatherHex = d.hex
+                    root.weatherDesc = d.desc
+                    root.weatherReady = true
+                    root.weatherError = ""
                 }
-            } catch(e) {}
-            root._geoBuf = ""
-            weatherProc.running = true
-            wttrProc.running = true
-        }
-    }
-
-    Timer {
-        interval: 3600000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        onTriggered: geoProc.running = true
-    }
-
-    // ---------------------
-    // Weather fetch via Open-Meteo
-    // ---------------------
-    Process {
-        id: weatherProc
-        command: ["curl", "-sf", "--max-time", "10",
-            "https://api.open-meteo.com/v1/forecast?latitude=" + root.weatherLat +
-            "&longitude=" + root.weatherLon +
-            "&current=temperature_2m,apparent_temperature,is_day,weather_code&timezone=auto"]
-        stdout: SplitParser {
-            onRead: function(line) {
-                root._weatherBuf += line
-            }
-        }
-        onExited: function() {
-            try {
-                var d = JSON.parse(root._weatherBuf)
-                var c = d.current
-                root.weatherTemp = c.temperature_2m
-                root.weatherFeelsLike = c.apparent_temperature
-                root.weatherCode = c.weather_code
-                root.weatherIsDay = c.is_day === 1
-                root.weatherReady = true
-                root.weatherError = ""
             } catch(e) {
                 root.weatherError = "Weather data unavailable"
             }
-            root._weatherBuf = ""
+            root._weatherBarBuf = ""
         }
     }
 
     Timer {
         interval: 900000
-        running: root.weatherLat !== ""
+        running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: weatherProc.running = true
+        onTriggered: weatherBarProc.running = true
     }
 
     // ---------------------
-    // wttr.in PNG forecast image
+    // Weather full forecast (every 30 min)
     // ---------------------
     Process {
-        id: wttrProc
-        command: ["curl", "-sf", "--max-time", "20", "-o", "/tmp/qs-wttr.png",
-            "https://wttr.in/" + root.weatherLocation + ".png?background=1e1e1e"]
-        onExited: function() {
-            root.weatherImgRevision++
+        id: weatherForecastProc
+        command: ["bash", root.weatherScript, "--json"]
+        stdout: SplitParser {
+            onRead: function(line) {
+                root._weatherJsonBuf += line
+            }
         }
+        onExited: function() {
+            try {
+                var d = JSON.parse(root._weatherJsonBuf)
+                if (d.forecast) {
+                    root.weatherForecast = d.forecast
+                }
+            } catch(e) {}
+            root._weatherJsonBuf = ""
+        }
+    }
+
+    Timer {
+        interval: 1800000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: weatherForecastProc.running = true
     }
 
     // ---------------------
@@ -387,16 +336,19 @@ ShellRoot {
                     Text {
                         id: weatherBtn
                         visible: root.weatherReady
-                        text: root.weatherIconForCode(root.weatherCode, root.weatherIsDay).icon +
-                              " " + Math.round(root.weatherTemp) + "\u00B0(" +
-                              Math.round(root.weatherFeelsLike) + ")"
-                        color: root.accentTeal
+                        text: root.weatherIcon + " " + root.weatherTemp +
+                              "\u00B0(" + root.weatherFeelsLike + ")"
+                        color: root.weatherHex
                         font.pixelSize: root.fontSize; font.family: root.fontFamily
                         font.bold: true
                         MouseArea {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
-                            onClicked: weatherPopup.visible = !weatherPopup.visible
+                            onClicked: {
+                                if (root.weatherForecast.length === 0)
+                                    weatherForecastProc.running = true
+                                weatherPopup.visible = !weatherPopup.visible
+                            }
                         }
                     }
                 }
@@ -953,7 +905,7 @@ ShellRoot {
             }
 
             // -------------------------------------------------------
-            // Weather forecast popup (wttr.in PNG)
+            // Weather forecast popup (native 5-day forecast)
             // -------------------------------------------------------
             PopupWindow {
                 id: weatherPopup
@@ -966,38 +918,176 @@ ShellRoot {
                 anchor.gravity: Edges.Bottom
                 anchor.adjustment: PopupAdjustment.Slide
 
-                implicitWidth: weatherPopupContent.width
-                implicitHeight: weatherPopupContent.height
+                implicitWidth: forecastColumn.implicitWidth + 32
+                implicitHeight: forecastColumn.implicitHeight + 32
 
                 color: root.bgColor
 
                 Rectangle {
-                    id: weatherPopupContent
-                    width: weatherImg.status === Image.Ready
-                           ? Math.max(weatherImg.implicitWidth + 24, 320)
-                           : 320
-                    height: weatherImg.status === Image.Ready
-                            ? weatherImg.implicitHeight + 16
-                            : 80
+                    anchors.fill: parent
                     color: root.bgColor
                     border.color: root.mutedColor
                     border.width: 1
                     radius: 6
 
-                    Image {
-                        id: weatherImg
-                        anchors.centerIn: parent
-                        source: "file:///tmp/qs-wttr.png?" + root.weatherImgRevision
-                        fillMode: Image.PreserveAspectFit
-                    }
+                    Column {
+                        id: forecastColumn
+                        anchors {
+                            fill: parent
+                            margins: 12
+                        }
+                        spacing: 8
 
-                    Text {
-                        anchors.centerIn: parent
-                        visible: weatherImg.status === Image.Error || weatherImg.status === Image.Null
-                        text: root.weatherError || "Forecast image unavailable"
-                        color: root.fgColor
-                        font.pixelSize: root.fontSize
-                        font.family: root.fontFamily
+                        // ── Day selector tabs ──
+                        Row {
+                            spacing: 4
+
+                            Repeater {
+                                model: root.weatherForecast
+
+                                delegate: Rectangle {
+                                    required property var modelData
+                                    required property int index
+                                    width: 72; height: 52
+                                    radius: 4
+                                    color: index === root.weatherSelectedDay
+                                           ? root.mutedColor : "transparent"
+
+                                    Column {
+                                        anchors.centerIn: parent
+                                        spacing: 1
+
+                                        Text {
+                                            text: modelData.day || ""
+                                            color: root.fgColor
+                                            font.pixelSize: 11
+                                            font.family: root.fontFamily
+                                            font.bold: index === root.weatherSelectedDay
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                        Text {
+                                            text: modelData.icon || ""
+                                            font.pixelSize: 18
+                                            font.family: root.fontFamily
+                                            color: modelData.hex || root.fgColor
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                        Text {
+                                            text: Math.round(modelData.max) + "\u00B0/" +
+                                                  Math.round(modelData.min) + "\u00B0"
+                                            color: root.fgColor
+                                            font.pixelSize: 10
+                                            font.family: root.fontFamily
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                    }
+
+                                    MouseArea {
+                                        anchors.fill: parent
+                                        cursorShape: Qt.PointingHandCursor
+                                        onClicked: root.weatherSelectedDay = index
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Divider ──
+                        Rectangle {
+                            width: parent.width; height: 1
+                            color: root.mutedColor
+                        }
+
+                        // ── Selected day detail ──
+                        Column {
+                            spacing: 4
+                            visible: root.weatherForecast.length > 0
+
+                            property var day: root.weatherForecast[root.weatherSelectedDay] || {}
+
+                            Text {
+                                text: (parent.day.day || "") + "  " + (parent.day.date || "")
+                                color: root.fgColor
+                                font.pixelSize: 13
+                                font.family: root.fontFamily
+                                font.bold: true
+                            }
+
+                            Row {
+                                spacing: 16
+                                Text {
+                                    text: "\uE37D " + Math.round(parent.parent.day.wind || 0) + " km/h"
+                                    color: root.fgColor
+                                    font.pixelSize: 11; font.family: root.fontFamily
+                                }
+                                Text {
+                                    text: "\uE373 " + Math.round(parent.parent.day.humidity || 0) + "%"
+                                    color: root.fgColor
+                                    font.pixelSize: 11; font.family: root.fontFamily
+                                }
+                                Text {
+                                    text: "\uE371 " + Math.round(parent.parent.day.pop || 0) + "%"
+                                    color: root.fgColor
+                                    font.pixelSize: 11; font.family: root.fontFamily
+                                }
+                            }
+                        }
+
+                        // ── Divider ──
+                        Rectangle {
+                            width: parent.width; height: 1
+                            color: root.mutedColor
+                        }
+
+                        // ── Hourly forecast (scrollable) ──
+                        Flickable {
+                            width: parent.width
+                            height: 64
+                            contentWidth: hourlyRow.implicitWidth
+                            clip: true
+
+                            Row {
+                                id: hourlyRow
+                                spacing: 6
+
+                                Repeater {
+                                    model: (root.weatherForecast[root.weatherSelectedDay] || {}).hourly || []
+
+                                    delegate: Column {
+                                        required property var modelData
+                                        width: 44
+                                        spacing: 1
+
+                                        Text {
+                                            text: modelData.time || ""
+                                            color: root.mutedColor
+                                            font.pixelSize: 9; font.family: root.fontFamily
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                        Text {
+                                            text: modelData.icon || ""
+                                            font.pixelSize: 16; font.family: root.fontFamily
+                                            color: modelData.hex || root.fgColor
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                        Text {
+                                            text: Math.round(modelData.temp) + "\u00B0"
+                                            color: root.fgColor
+                                            font.pixelSize: 10; font.family: root.fontFamily
+                                            anchors.horizontalCenter: parent.horizontalCenter
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Error / loading fallback ──
+                        Text {
+                            visible: root.weatherForecast.length === 0
+                            text: root.weatherError || "Loading forecast\u2026"
+                            color: root.fgColor
+                            font.pixelSize: root.fontSize
+                            font.family: root.fontFamily
+                        }
                     }
                 }
             }
