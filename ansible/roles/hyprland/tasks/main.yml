@@ -34,7 +34,6 @@
 - name: Install quickshell-git AUR dependencies
   kewlfft.aur.aur:
     name:
-      - google-breakpad
       - cpptrace
     use: paru
     state: present
@@ -44,6 +43,7 @@
   ansible.builtin.command:
     cmd: makepkg -si --noconfirm
     chdir: "{{ qs_builddir.path }}"
+  become: no
 
 - name: Clean up quickshell-git build directory
   ansible.builtin.file:
