@@ -19,9 +19,9 @@ depends=(
   'wayland'
   'libdrm'
   'mesa'
-  'google-breakpad'
   'cpptrace'
-	'polkit'
+  'vulkan-headers'
+  'polkit'
 )
 makedepends=(
   'spirv-tools'

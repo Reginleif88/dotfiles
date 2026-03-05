@@ -34,7 +34,6 @@
 - name: Install quickshell-git AUR dependencies
   kewlfft.aur.aur:
     name:
-      - google-breakpad
       - cpptrace
     use: paru
     state: present
