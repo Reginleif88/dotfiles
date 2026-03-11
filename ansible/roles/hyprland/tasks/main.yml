@@ -24,6 +24,7 @@
   ansible.builtin.tempfile:
     state: directory
     prefix: quickshell-git-
+    path: /var/tmp
   register: qs_builddir
 
 - name: Copy patched quickshell-git PKGBUILD and files
@@ -59,6 +60,7 @@
       - cliphist
       - wl-clipboard
       - gruvbox-material-gtk-theme-git
+      - hyprsettings-git
     use: paru
     state: present
   become: no
@@ -101,6 +103,16 @@
   kewlfft.aur.aur:
     name:
       - walker-bin
+    use: paru
+    state: present
+  become: no
+
+# ── Elephant (data provider for Walker) ────────────────────────────
+
+- name: Install elephant-bin
+  kewlfft.aur.aur:
+    name:
+      - elephant-bin
     use: paru
     state: present
   become: no

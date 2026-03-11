@@ -27,6 +27,7 @@ import Quickshell.Widgets
 import Quickshell.Services.SystemTray
 import Quickshell.Services.Pipewire
 import "sidebar"
+import "network"
 
 ShellRoot {
     id: root
@@ -51,6 +52,13 @@ ShellRoot {
     readonly property int    barHeight:     32
     readonly property int    barGap:        8    // top + bottom gap
     readonly property int    barSideMargin: 8    // left + right inset
+
+    // Pill capsule theming
+    readonly property color pillColor:   Qt.rgba(0.157, 0.157, 0.157, 0.88)  // #282828 at 88% opacity
+    readonly property int  pillRadius:   14    // full capsule end-caps
+    readonly property int  pillHPad:     10    // horizontal padding
+    readonly property int  pillVPad:     4     // vertical padding
+    readonly property int  pillSpacing:  6     // gap between pills
 
     // ---------------------
     // Global state
@@ -95,6 +103,14 @@ ShellRoot {
     SystemClock {
         id: clock
         precision: SystemClock.Seconds
+    }
+
+    // ---------------------
+    // HyprSettings launcher
+    // ---------------------
+    Process {
+        id: hyprsettingsProc
+        command: ["hyprsettings"]
     }
 
     // ---------------------
@@ -261,7 +277,10 @@ ShellRoot {
                 if (d.forecast) {
                     root.weatherForecast = d.forecast
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.warn("Weather JSON parse error:", e)
+                root.weatherError = "Forecast parse error"
+            }
             root._weatherJsonBuf = ""
         }
     }
@@ -271,7 +290,12 @@ ShellRoot {
         running: true
         repeat: true
         triggeredOnStart: true
-        onTriggered: weatherForecastProc.running = true
+        onTriggered: {
+            if (!weatherForecastProc.running) {
+                root._weatherJsonBuf = ""
+                weatherForecastProc.running = true
+            }
+        }
     }
 
     // ---------------------
@@ -306,9 +330,9 @@ ShellRoot {
             color: "transparent"   // background painted by inner Rectangle
 
             // -------------------------------------------------------
-            // Root bar rectangle
+            // Root bar container (transparent — pills provide bg)
             // -------------------------------------------------------
-            Rectangle {
+            Item {
                 anchors {
                     fill:         parent
                     topMargin:    root.barGap
@@ -316,15 +340,12 @@ ShellRoot {
                     leftMargin:   root.barSideMargin
                     rightMargin:  root.barSideMargin
                 }
-                color:  root.bgColor
-                radius: 10
-                clip:   true
 
-                // True-centered clock + weather (direct child, renders above layout)
-                Row {
+                // True-centered clock + weather pill
+                Pill {
                     anchors.centerIn: parent
                     z: 1
-                    spacing: 16
+                    innerSpacing: 16
 
                     Text {
                         text: Qt.formatDateTime(clock.date, "ddd d MMM   HH:mm")
@@ -345,8 +366,10 @@ ShellRoot {
                             anchors.fill: parent
                             cursorShape: Qt.PointingHandCursor
                             onClicked: {
-                                if (root.weatherForecast.length === 0)
+                                if (root.weatherForecast.length === 0 && !weatherForecastProc.running) {
+                                    root._weatherJsonBuf = ""
                                     weatherForecastProc.running = true
+                                }
                                 weatherPopup.visible = !weatherPopup.visible
                             }
                         }
@@ -355,16 +378,16 @@ ShellRoot {
 
                 RowLayout {
                     anchors.fill: parent
-                    spacing: 0
+                    spacing: root.pillSpacing
 
                     // ======================
                     // LEFT SECTION
                     // ======================
-                    RowLayout {
-                        spacing: 2
-                        Layout.leftMargin: 8
 
-                        // ---- Workspace switcher ----
+                    // ---- Workspaces pill ----
+                    Pill {
+                        innerSpacing: 2
+
                         Repeater {
                             model: bar.monitorWsIds
 
@@ -377,8 +400,8 @@ ShellRoot {
                                 readonly property bool isFocused: bar.hyprMonitor !== null && bar.hyprMonitor.activeWorkspace !== null && bar.hyprMonitor.activeWorkspace.id === wsId
                                 readonly property bool hasWindows: wsObj !== null
 
-                                width:  24
-                                height: root.barHeight
+                                Layout.preferredWidth:  24
+                                Layout.preferredHeight: root.barHeight - root.pillVPad * 2
 
                                 // Highlight pill behind the active workspace number
                                 Rectangle {
@@ -425,17 +448,10 @@ ShellRoot {
                                 }
                             }
                         }
+                    }
 
-                        // ---- Separator ----
-                        Text {
-                            Layout.leftMargin: 6; Layout.rightMargin: 6
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "\uE0B1"
-                            font.pixelSize: root.fontSize; font.family: root.fontFamily
-                            color: root.mutedColor
-                        }
-
-                        // ---- Active window title ----
+                    // ---- Window title pill ----
+                    Pill {
                         Text {
                             text: "\uF2D0 " + (root.activeWindowTitle.length > 0
                                   ? root.activeWindowTitle
@@ -446,19 +462,13 @@ ShellRoot {
                             elide:           Text.ElideRight
                             maximumLineCount: 1
                             Layout.maximumWidth: 300
-                            Layout.rightMargin:  8
                         }
+                    }
 
-                        // ---- Separator ----
-                        Text {
-                            Layout.leftMargin: 6; Layout.rightMargin: 6
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "\uE0B1"
-                            font.pixelSize: root.fontSize; font.family: root.fontFamily
-                            color: root.mutedColor
-                        }
+                    // ---- CPU + RAM pill ----
+                    Pill {
+                        innerSpacing: 8
 
-                        // ---- CPU usage ----
                         Text {
                             text: "\uF4BC " + root.cpuPercent + "%"
                             color: root.cpuPercent > 85 ? root.accentRed
@@ -468,16 +478,6 @@ ShellRoot {
                             font.family:    root.fontFamily
                         }
 
-                        // ---- Separator ----
-                        Text {
-                            Layout.leftMargin: 6; Layout.rightMargin: 6
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "\uE0B1"
-                            font.pixelSize: root.fontSize; font.family: root.fontFamily
-                            color: root.mutedColor
-                        }
-
-                        // ---- RAM usage ----
                         Text {
                             text: "\uF2DB " + root.ramGb.toFixed(1) + "G"
                             color: root.ramGb > 16 ? root.accentRed
@@ -485,7 +485,6 @@ ShellRoot {
                                  : root.accentBlue
                             font.pixelSize: root.fontSize
                             font.family:    root.fontFamily
-                            Layout.rightMargin: 8
                         }
                     }
 
@@ -497,11 +496,11 @@ ShellRoot {
                     // ======================
                     // RIGHT SECTION
                     // ======================
-                    RowLayout {
-                        spacing: 8
-                        Layout.rightMargin: 8
 
-                        // ---- Sound output ----
+                    // ---- Audio pill (sink switch + volume) ----
+                    Pill {
+                        innerSpacing: 8
+
                         Text {
                             id: sinkSwitchBtn
                             text: "\uF025"
@@ -515,16 +514,6 @@ ShellRoot {
                             }
                         }
 
-                        // ---- Separator ----
-                        Text {
-                            Layout.leftMargin: 2; Layout.rightMargin: 2
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "\uE0B1"
-                            font.pixelSize: root.fontSize; font.family: root.fontFamily
-                            color: root.mutedColor
-                        }
-
-                        // ---- Volume ----
                         Item {
                             id: volumeGroup
                             implicitWidth: volRow.width
@@ -591,113 +580,112 @@ ShellRoot {
                                 }
                             }
                         }
+                    }
 
-                        // ---- Separator ----
+                    // ---- Network pill ----
+                    Pill {
                         Text {
-                            Layout.leftMargin: 2; Layout.rightMargin: 2
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "\uE0B1"
-                            font.pixelSize: root.fontSize; font.family: root.fontFamily
-                            color: root.mutedColor
+                            id: networkBtn
+                            text: networkPopup.btPower === "on" ? "\uF294" : "\uF293"
+                            font.pixelSize: root.fontSize
+                            font.family: root.fontFamily
+                            color: networkPopup.visible ? root.accentYellow
+                                 : networkPopup.btPower === "on" ? root.accentLavender
+                                 : root.mutedColor
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: networkPopup.visible = !networkPopup.visible
+                            }
+                        }
+                    }
+
+                    // ---- Utilities pill (settings + screenshot) ----
+                    Pill {
+                        innerSpacing: 8
+
+                        Text {
+                            id: settingsBtn
+                            text: "\uF013"  // gear icon (nf-fa-gear)
+                            font.pixelSize: root.fontSize
+                            font.family: root.fontFamily
+                            color: root.accentTeal
+                            MouseArea {
+                                anchors.fill: parent
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: hyprsettingsProc.running = true
+                            }
                         }
 
-                        // ---- Screenshot ----
                         Text {
                             id: screenshotBtn
                             text: "\uF030"
                             font.pixelSize: root.fontSize
                             font.family: root.fontFamily
                             color: root.accentTeal
-                            Layout.alignment: Qt.AlignVCenter
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: screenshotProc.running = true
                             }
                         }
+                    }
 
-                        // ---- Separator ----
-                        Text {
-                            Layout.leftMargin: 6; Layout.rightMargin: 6
-                            Layout.alignment: Qt.AlignVCenter
-                            text: "\uE0B1"
-                            font.pixelSize: root.fontSize; font.family: root.fontFamily
-                            color: root.mutedColor
-                        }
+                    // ---- System tray pill ----
+                    Pill {
+                        innerSpacing: 4
 
-                        // ---- System tray ----
-                        Row {
-                            spacing: 0
+                        Repeater {
+                            model: SystemTray.items.values
 
-                            Repeater {
-                                model: SystemTray.items.values
+                            delegate: Item {
+                                id: trayIcon
+                                required property var modelData
+                                required property int index
+                                Layout.preferredWidth:  20
+                                Layout.preferredHeight: 20
 
-                                delegate: Row {
-                                    id: trayItem
-                                    required property var modelData
-                                    required property int index
-                                    spacing: 0
+                                // Icon image - prefer the icon provided by the item,
+                                // fall back to a named icon from the desktop theme.
+                                IconImage {
+                                    anchors.centerIn: parent
+                                    implicitSize: 16
+                                    source: trayIcon.modelData.icon
+                                    mipmap: true
+                                }
 
-                                    // Separator before every item except the first
-                                    Text {
-                                        visible: trayItem.index > 0
-                                        text: "\uE0B1"
-                                        font.pixelSize: root.fontSize
-                                        font.family: root.fontFamily
-                                        color: root.mutedColor
-                                        anchors.verticalCenter: parent.verticalCenter
-                                        leftPadding: 6; rightPadding: 6
-                                    }
+                                // Context menu anchor (for right-click menus)
+                                QsMenuAnchor {
+                                    id: trayMenu
+                                    anchor.item: trayIcon
+                                    menu: trayIcon.modelData.menu
+                                }
 
-                                    Item {
-                                        id: trayIcon
-                                        width:  20
-                                        height: 20
-
-                                    // Icon image - prefer the icon provided by the item,
-                                    // fall back to a named icon from the desktop theme.
-                                    IconImage {
-                                        anchors.centerIn: parent
-                                        implicitSize: 16
-                                        // modelData.icon is already a valid image source string
-                                        source: trayItem.modelData.icon
-                                        mipmap: true
-                                    }
-
-                                        // Context menu anchor (for right-click menus)
-                                        QsMenuAnchor {
-                                            id: trayMenu
-                                            anchor.item: trayIcon
-                                            menu: trayItem.modelData.menu
-                                        }
-
-                                        MouseArea {
-                                            anchors.fill: parent
-                                            acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
-                                            cursorShape: Qt.PointingHandCursor
-                                            onClicked: function(mouse) {
-                                                if (mouse.button === Qt.RightButton) {
-                                                    if (trayItem.modelData.hasMenu) {
-                                                        trayMenu.open()
-                                                    } else {
-                                                        trayItem.modelData.activate()
-                                                    }
-                                                } else if (mouse.button === Qt.MiddleButton) {
-                                                    trayItem.modelData.secondaryActivate()
-                                                } else {
-                                                    if (trayItem.modelData.onlyMenu && trayItem.modelData.hasMenu) {
-                                                        trayMenu.open()
-                                                    } else {
-                                                        trayItem.modelData.activate()
-                                                    }
-                                                }
+                                MouseArea {
+                                    anchors.fill: parent
+                                    acceptedButtons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+                                    cursorShape: Qt.PointingHandCursor
+                                    onClicked: function(mouse) {
+                                        if (mouse.button === Qt.RightButton) {
+                                            if (trayIcon.modelData.hasMenu) {
+                                                trayMenu.open()
+                                            } else {
+                                                trayIcon.modelData.activate()
                                             }
-                                            onWheel: function(wheel) {
-                                                trayItem.modelData.scroll(wheel.angleDelta.y / 120, false)
+                                        } else if (mouse.button === Qt.MiddleButton) {
+                                            trayIcon.modelData.secondaryActivate()
+                                        } else {
+                                            if (trayIcon.modelData.onlyMenu && trayIcon.modelData.hasMenu) {
+                                                trayMenu.open()
+                                            } else {
+                                                trayIcon.modelData.activate()
                                             }
                                         }
-                                    } // Item (trayIcon)
-                                } // Row (trayItem delegate)
+                                    }
+                                    onWheel: function(wheel) {
+                                        trayIcon.modelData.scroll(wheel.angleDelta.y / 120, false)
+                                    }
+                                }
                             }
                         }
                     }
@@ -918,13 +906,15 @@ ShellRoot {
                 anchor.gravity: Edges.Bottom
                 anchor.adjustment: PopupAdjustment.Slide
 
-                implicitWidth: forecastColumn.implicitWidth + 32
-                implicitHeight: forecastColumn.implicitHeight + 32
+                implicitWidth: weatherPopupContent.width
+                implicitHeight: weatherPopupContent.height
 
                 color: root.bgColor
 
                 Rectangle {
-                    anchors.fill: parent
+                    id: weatherPopupContent
+                    width: 392
+                    height: forecastColumn.implicitHeight + 24
                     color: root.bgColor
                     border.color: root.mutedColor
                     border.width: 1
@@ -932,10 +922,8 @@ ShellRoot {
 
                     Column {
                         id: forecastColumn
-                        anchors {
-                            fill: parent
-                            margins: 12
-                        }
+                        anchors.centerIn: parent
+                        width: parent.width - 24
                         spacing: 8
 
                         // ── Day selector tabs ──
@@ -1090,6 +1078,27 @@ ShellRoot {
                         }
                     }
                 }
+            }
+
+            // -------------------------------------------------------
+            // Network popup (WiFi + Bluetooth)
+            // -------------------------------------------------------
+            NetworkPopup {
+                id: networkPopup
+                anchorWindow: bar
+                anchorItem: networkBtn
+
+                bgColor: root.bgColor
+                fgColor: root.fgColor
+                mutedColor: root.mutedColor
+                accentBlue: root.accentBlue
+                accentLavender: root.accentLavender
+                accentGreen: root.accentGreen
+                accentYellow: root.accentYellow
+                accentRed: root.accentRed
+                accentTeal: root.accentTeal
+                fontFamily: root.fontFamily
+                fontSize: root.fontSize
             }
         }
     }
