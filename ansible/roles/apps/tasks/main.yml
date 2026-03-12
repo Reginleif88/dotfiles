@@ -51,3 +51,23 @@
     name: visual-studio-code-bin
     state: present
   become: no
+
+# ── Stremio ──────────────────────────────────────────────────────
+
+- name: Ensure Flatpak is installed
+  community.general.pacman:
+    name: flatpak
+    state: present
+  become: yes
+
+- name: Add Flathub remote
+  community.general.flatpak_remote:
+    name: flathub
+    flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+    state: present
+
+- name: Install Stremio (Flatpak)
+  community.general.flatpak:
+    name: com.stremio.Stremio
+    remote: flathub
+    state: present
