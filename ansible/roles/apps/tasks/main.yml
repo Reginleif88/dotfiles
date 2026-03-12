@@ -79,3 +79,37 @@
     name: com.stremio.Stremio
     remote: flathub
     state: present
+
+# ── Electron 33 ────────────────────────────────────────────────
+
+- name: Install Electron 33
+  kewlfft.aur.aur:
+    name: electron33-bin
+    state: present
+  become: no
+
+# ── JRE OpenJDK ────────────────────────────────────────────────
+
+- name: Install JRE OpenJDK (headless)
+  community.general.pacman:
+    name: jre-openjdk-headless
+    state: present
+  become: yes
+
+# ── Android Tools / scrcpy ───────────────────────────────────────
+
+- name: Install android-tools and scrcpy
+  community.general.pacman:
+    name:
+      - android-tools
+      - scrcpy
+    state: present
+  become: yes
+
+# ── Escrcpy ────────────────────────────────────────────────────
+
+- name: Install Escrcpy
+  kewlfft.aur.aur:
+    name: escrcpy-bin
+    state: present
+  become: no

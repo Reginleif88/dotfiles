@@ -27,3 +27,6 @@ export NVM_DIR="$HOME/.nvm"
 # ── Aliases ────────────────────────────────────────────────────────
 alias ll="ls -lah"
 alias la="ls -A"
+
+# PAI alias
+alias pai='bun /home/reginleif88/.claude/PAI/Tools/pai.ts'
