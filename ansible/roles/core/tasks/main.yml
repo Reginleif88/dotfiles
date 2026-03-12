@@ -20,6 +20,7 @@
       - python-pip
       - xdg-user-dirs
       - starship
+      - kitty
       - ttf-firacode-nerd
       - cachy-update
       - network-manager-applet

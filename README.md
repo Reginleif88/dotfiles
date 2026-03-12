@@ -22,7 +22,7 @@ Gruvbox Dark themed, dual-monitor, NVIDIA-optimized
 |---|---|
 | Window Manager | Hyprland, Hyprbars |
 | Status Bar | Quickshell |
-| Terminal | Alacritty |
+| Terminal | Kitty |
 | Shell | Zsh, Oh My Zsh, Starship |
 | App Launcher | Walker |
 | Notifications | Mako |
@@ -73,6 +73,7 @@ dotfiles/
 │   │       ├── shell.qml           # Status bar (QML)
 │   │       └── sidebar/
 │   │           └── GeminiSidebar.qml # Gemini AI sidebar panel
+│   ├── kitty/kitty.conf          # Terminal configuration
 │   ├── starship.toml            # Prompt configuration
 │   └── xfce4/helpers.rc         # Default terminal helper
 ├── dot_zshrc                    # Zsh configuration
