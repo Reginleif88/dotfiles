@@ -55,4 +55,5 @@ chezmoi apply
 
 echo "==> Bootstrap complete. Reboot and start Hyprland from TTY."
 echo ""
+echo "==> POST-BOOT (inside Hyprland): Run 'chezmoi apply' to complete hyprpm plugin setup."
 echo "==> POST-BOOT: Run .bin in \"Downloads\" to complete some installs"
