@@ -48,9 +48,10 @@ ShellRoot {
     readonly property color accentOrange:   "#fe8019"   // bright orange
 
     readonly property string fontFamily:    "FiraCode Nerd Font"
-    readonly property int    fontSize:      13
+    readonly property int    fontSize:      15
     readonly property int    barHeight:     32
-    readonly property int    barGap:        8    // top + bottom gap
+    readonly property int    barGap:        8    // top gap
+    readonly property int    barBottomGap:  0    // bottom gap (below bar)
     readonly property int    barSideMargin: 8    // left + right inset
 
     // Pill capsule theming
@@ -110,7 +111,7 @@ ShellRoot {
     // ---------------------
     Process {
         id: hyprsettingsProc
-        command: ["hyprsettings"]
+        command: ["hyprsettings", "--no-dmabuf"]
     }
 
     // ---------------------
@@ -324,9 +325,9 @@ ShellRoot {
             }
 
             // Reserve space so windows don't overlap the bar
-            exclusiveZone: root.barHeight + root.barGap * 2
+            exclusiveZone: root.barHeight + root.barGap + root.barBottomGap
 
-            implicitHeight: root.barHeight + root.barGap * 2
+            implicitHeight: root.barHeight + root.barGap + root.barBottomGap
             color: "transparent"   // background painted by inner Rectangle
 
             // -------------------------------------------------------
@@ -336,7 +337,7 @@ ShellRoot {
                 anchors {
                     fill:         parent
                     topMargin:    root.barGap
-                    bottomMargin: root.barGap
+                    bottomMargin: root.barBottomGap
                     leftMargin:   root.barSideMargin
                     rightMargin:  root.barSideMargin
                 }
@@ -948,14 +949,14 @@ ShellRoot {
                                         Text {
                                             text: modelData.day || ""
                                             color: root.fgColor
-                                            font.pixelSize: 11
+                                            font.pixelSize: 13
                                             font.family: root.fontFamily
                                             font.bold: index === root.weatherSelectedDay
                                             anchors.horizontalCenter: parent.horizontalCenter
                                         }
                                         Text {
                                             text: modelData.icon || ""
-                                            font.pixelSize: 18
+                                            font.pixelSize: 20
                                             font.family: root.fontFamily
                                             color: modelData.hex || root.fgColor
                                             anchors.horizontalCenter: parent.horizontalCenter
@@ -964,7 +965,7 @@ ShellRoot {
                                             text: Math.round(modelData.max) + "\u00B0/" +
                                                   Math.round(modelData.min) + "\u00B0"
                                             color: root.fgColor
-                                            font.pixelSize: 10
+                                            font.pixelSize: 12
                                             font.family: root.fontFamily
                                             anchors.horizontalCenter: parent.horizontalCenter
                                         }
@@ -995,7 +996,7 @@ ShellRoot {
                             Text {
                                 text: (parent.day.day || "") + "  " + (parent.day.date || "")
                                 color: root.fgColor
-                                font.pixelSize: 13
+                                font.pixelSize: 15
                                 font.family: root.fontFamily
                                 font.bold: true
                             }
@@ -1005,17 +1006,17 @@ ShellRoot {
                                 Text {
                                     text: "\uE37D " + Math.round(parent.parent.day.wind || 0) + " km/h"
                                     color: root.fgColor
-                                    font.pixelSize: 11; font.family: root.fontFamily
+                                    font.pixelSize: 13; font.family: root.fontFamily
                                 }
                                 Text {
                                     text: "\uE373 " + Math.round(parent.parent.day.humidity || 0) + "%"
                                     color: root.fgColor
-                                    font.pixelSize: 11; font.family: root.fontFamily
+                                    font.pixelSize: 13; font.family: root.fontFamily
                                 }
                                 Text {
                                     text: "\uE371 " + Math.round(parent.parent.day.pop || 0) + "%"
                                     color: root.fgColor
-                                    font.pixelSize: 11; font.family: root.fontFamily
+                                    font.pixelSize: 13; font.family: root.fontFamily
                                 }
                             }
                         }
@@ -1048,19 +1049,19 @@ ShellRoot {
                                         Text {
                                             text: modelData.time || ""
                                             color: root.mutedColor
-                                            font.pixelSize: 9; font.family: root.fontFamily
+                                            font.pixelSize: 11; font.family: root.fontFamily
                                             anchors.horizontalCenter: parent.horizontalCenter
                                         }
                                         Text {
                                             text: modelData.icon || ""
-                                            font.pixelSize: 16; font.family: root.fontFamily
+                                            font.pixelSize: 18; font.family: root.fontFamily
                                             color: modelData.hex || root.fgColor
                                             anchors.horizontalCenter: parent.horizontalCenter
                                         }
                                         Text {
                                             text: Math.round(modelData.temp) + "\u00B0"
                                             color: root.fgColor
-                                            font.pixelSize: 10; font.family: root.fontFamily
+                                            font.pixelSize: 12; font.family: root.fontFamily
                                             anchors.horizontalCenter: parent.horizontalCenter
                                         }
                                     }

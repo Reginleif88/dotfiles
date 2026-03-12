@@ -52,6 +52,14 @@
     state: present
   become: no
 
+# ── KATE Text Editor ─────────────────────────────────────────────
+
+- name: Install KATE text editor
+  community.general.pacman:
+    name: kate
+    state: present
+  become: yes
+
 # ── Stremio ──────────────────────────────────────────────────────
 
 - name: Ensure Flatpak is installed

@@ -4,6 +4,8 @@
 
 FLAG="$HOME/.local/state/hyprpm-setup-done"
 
+hyprpm update
+
 if [[ -f "$FLAG" ]]; then
     exit 0
 fi
