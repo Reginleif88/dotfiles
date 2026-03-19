@@ -113,3 +113,70 @@
     name: escrcpy-bin
     state: present
   become: no
+
+# ── Podman Desktop ────────────────────────────────────────────
+
+- name: Install Podman
+  community.general.pacman:
+    name: podman
+    state: present
+  become: yes
+
+- name: Install Podman Desktop (Flatpak)
+  community.general.flatpak:
+    name: io.podman_desktop.PodmanDesktop
+    remote: flathub
+    state: present
+
+# ── Docker ────────────────────────────────────────────────────
+
+- name: Install Docker and Compose
+  community.general.pacman:
+    name:
+      - docker
+      - docker-compose
+      - docker-buildx
+    state: present
+  become: yes
+
+- name: Enable and start Docker service
+  ansible.builtin.systemd:
+    name: docker
+    enabled: yes
+    state: started
+  become: yes
+
+- name: Add user to docker group
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: docker
+    append: yes
+  become: yes
+
+# ── EasyEffects ────────────────────────────────────────────────
+
+- name: Install EasyEffects
+  community.general.pacman:
+    name: easyeffects
+    state: present
+  become: yes
+
+# ── Arduino IDE ────────────────────────────────────────────────
+- name: Install Arduino IDE
+  kewlfft.aur.aur:
+    name: arduino-ide-bin
+    state: present
+  become: no
+
+# ── PlatformIO ────────────────────────────────────────────────
+- name: Install PlatformIO Core (udev rules)
+  community.general.pacman:
+    name: platformio-core-udev
+    state: present
+  become: yes
+
+- name: Install PlatformIO IDE (VS Code extension)
+  ansible.builtin.command:
+    cmd: code --install-extension platformio.platformio-ide
+  become: no
+  changed_when: false

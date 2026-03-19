@@ -25,6 +25,7 @@
       - cachy-update
       - network-manager-applet
       - blueman
+      - tmux
     state: present
   become: yes
 

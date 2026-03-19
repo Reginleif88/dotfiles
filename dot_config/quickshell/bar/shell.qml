@@ -28,6 +28,7 @@ import Quickshell.Services.SystemTray
 import Quickshell.Services.Pipewire
 import "sidebar"
 import "network"
+import "audio"
 
 ShellRoot {
     id: root
@@ -507,11 +508,11 @@ ShellRoot {
                             text: "\uF025"
                             font.pixelSize: root.fontSize
                             font.family: root.fontFamily
-                            color: sinkPopup.visible ? root.accentYellow : root.accentGreen
+                            color: audioMixerPopup.visible ? root.accentYellow : root.accentGreen
                             MouseArea {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
-                                onClicked: sinkPopup.visible = !sinkPopup.visible
+                                onClicked: audioMixerPopup.visible = !audioMixerPopup.visible
                             }
                         }
 
@@ -542,7 +543,7 @@ ShellRoot {
                                                 if (root.defaultSink)
                                                     root.defaultSink.audio.muted = !root.defaultSink.audio.muted
                                             } else
-                                                volPopup.visible = !volPopup.visible
+                                                audioMixerPopup.visible = !audioMixerPopup.visible
                                         }
                                     }
                                 }
@@ -561,7 +562,7 @@ ShellRoot {
                                                 if (root.defaultSink)
                                                     root.defaultSink.audio.muted = !root.defaultSink.audio.muted
                                             } else
-                                                volPopup.visible = !volPopup.visible
+                                                audioMixerPopup.visible = !audioMixerPopup.visible
                                         }
                                     }
                                 }
@@ -686,206 +687,6 @@ ShellRoot {
                                     onWheel: function(wheel) {
                                         trayIcon.modelData.scroll(wheel.angleDelta.y / 120, false)
                                     }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // -------------------------------------------------------
-            // Sink switcher popup
-            // -------------------------------------------------------
-            PopupWindow {
-                id: sinkPopup
-                visible: false
-                grabFocus: true
-
-                anchor.window: bar
-                anchor.item: sinkSwitchBtn
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
-                anchor.adjustment: PopupAdjustment.Slide
-
-                implicitWidth: sinkPopupContent.width
-                implicitHeight: sinkPopupContent.height
-
-                color: root.bgColor
-
-                Rectangle {
-                    id: sinkPopupContent
-                    width: sinkColumn.width + 24
-                    height: sinkColumn.height + 16
-                    color: root.bgColor
-                    border.color: root.mutedColor
-                    border.width: 1
-                    radius: 6
-
-                    Column {
-                        id: sinkColumn
-                        anchors.centerIn: parent
-                        spacing: 4
-
-                        Text {
-                            text: "Audio Output"
-                            font.pixelSize: root.fontSize
-                            font.family: root.fontFamily
-                            font.bold: true
-                            color: root.accentLavender
-                            bottomPadding: 4
-                        }
-
-                        Repeater {
-                            model: {
-                                var sinks = [];
-                                var nodes = Pipewire.nodes.values;
-                                for (var i = 0; i < nodes.length; i++) {
-                                    var n = nodes[i];
-                                    if (n.isSink && !n.isStream) {
-                                        sinks.push(n);
-                                    }
-                                }
-                                return sinks;
-                            }
-
-                            delegate: Rectangle {
-                                id: sinkDelegate
-                                required property var modelData
-                                readonly property bool isDefault: Pipewire.defaultAudioSink !== null && Pipewire.defaultAudioSink.id === modelData.id
-                                readonly property string displayName: modelData.description || modelData.nickname || modelData.name
-
-                                width: Math.max(sinkLabel.implicitWidth + 16, 220)
-                                height: sinkLabel.implicitHeight + 10
-                                radius: 4
-                                color: isDefault
-                                       ? Qt.rgba(root.accentGreen.r, root.accentGreen.g, root.accentGreen.b, 0.15)
-                                       : (sinkMouse.containsMouse
-                                          ? Qt.rgba(root.fgColor.r, root.fgColor.g, root.fgColor.b, 0.08)
-                                          : "transparent")
-
-                                Text {
-                                    id: sinkLabel
-                                    anchors.centerIn: parent
-                                    text: sinkDelegate.displayName
-                                    font.pixelSize: root.fontSize
-                                    font.family: root.fontFamily
-                                    font.bold: sinkDelegate.isDefault
-                                    color: sinkDelegate.isDefault ? root.accentGreen : root.fgColor
-                                }
-
-                                MouseArea {
-                                    id: sinkMouse
-                                    anchors.fill: parent
-                                    cursorShape: Qt.PointingHandCursor
-                                    hoverEnabled: true
-                                    onClicked: {
-                                        Pipewire.preferredDefaultAudioSink = sinkDelegate.modelData;
-                                        sinkPopup.visible = false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // -------------------------------------------------------
-            // Volume slider popup (right-click speaker icon)
-            // -------------------------------------------------------
-            PopupWindow {
-                id: volPopup
-                visible: false
-                grabFocus: true
-
-                anchor.window: bar
-                anchor.item: speakerIcon
-                anchor.edges: Edges.Bottom
-                anchor.gravity: Edges.Bottom
-                anchor.adjustment: PopupAdjustment.Slide
-
-                implicitWidth: volPopupContent.width
-                implicitHeight: volPopupContent.height
-
-                color: root.bgColor
-
-                Rectangle {
-                    id: volPopupContent
-                    width: 240
-                    height: volPopupColumn.height + 20
-                    color: root.bgColor
-                    border.color: root.mutedColor
-                    border.width: 1
-                    radius: 6
-
-                    Column {
-                        id: volPopupColumn
-                        anchors.centerIn: parent
-                        spacing: 8
-
-                        Text {
-                            text: "\uF028  Volume: " + root.volumeLevel + "%"
-                            font.pixelSize: root.fontSize
-                            font.family: root.fontFamily
-                            font.bold: true
-                            color: root.accentLavender
-                        }
-
-                        Item {
-                            id: volSlider
-                            width: 212
-                            height: 20
-
-                            readonly property real sliderValue: root.volumeRaw
-                            readonly property real visualPos: Math.max(0, Math.min(1, sliderValue))
-
-                            function setVolFromX(mx) {
-                                var val = Math.max(0, Math.min(1, mx / sliderTrack.width))
-                                if (root.defaultSink)
-                                    root.defaultSink.audio.volume = val
-                            }
-
-                            Rectangle {
-                                id: sliderTrack
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: parent.width
-                                height: 8
-                                radius: 4
-                                color: root.mutedColor
-
-                                Rectangle {
-                                    width: volSlider.visualPos * parent.width
-                                    height: parent.height
-                                    radius: 4
-                                    color: root.volumeMuted ? root.mutedColor
-                                           : (volSlider.sliderValue > 1.0 ? root.accentRed : root.accentGreen)
-                                }
-                            }
-
-                            Rectangle {
-                                id: sliderHandle
-                                x: volSlider.visualPos * (sliderTrack.width - width)
-                                anchors.verticalCenter: parent.verticalCenter
-                                width: 14; height: 14
-                                radius: 7
-                                color: sliderMouse.pressed ? root.accentLavender : root.fgColor
-
-                                Behavior on color {
-                                    ColorAnimation { duration: 150 }
-                                }
-                            }
-
-                            MouseArea {
-                                id: sliderMouse
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                preventStealing: true
-
-                                onPressed: function(mouse) {
-                                    volSlider.setVolFromX(mouse.x)
-                                }
-                                onPositionChanged: function(mouse) {
-                                    if (pressed)
-                                        volSlider.setVolFromX(mouse.x)
                                 }
                             }
                         }
@@ -1098,6 +899,25 @@ ShellRoot {
                 accentYellow: root.accentYellow
                 accentRed: root.accentRed
                 accentTeal: root.accentTeal
+                fontFamily: root.fontFamily
+                fontSize: root.fontSize
+            }
+
+            // -------------------------------------------------------
+            // Audio mixer popup (master + sinks + per-app streams)
+            // -------------------------------------------------------
+            AudioMixerPopup {
+                id: audioMixerPopup
+                anchorWindow: bar
+                anchorItem: speakerIcon
+
+                bgColor: root.bgColor
+                fgColor: root.fgColor
+                mutedColor: root.mutedColor
+                accentGreen: root.accentGreen
+                accentLavender: root.accentLavender
+                accentRed: root.accentRed
+                accentYellow: root.accentYellow
                 fontFamily: root.fontFamily
                 fontSize: root.fontSize
             }
