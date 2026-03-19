@@ -11,6 +11,15 @@
       - hyprlauncher
       - xdg-desktop-portal-hyprland
       - thunar
+      - thunar-volman
+      - thunar-archive-plugin
+      - thunar-media-tags-plugin
+      - tumbler
+      - ffmpegthumbnailer
+      - xarchiver
+      - gvfs
+      - gvfs-mtp
+      - udisks2
       - nwg-displays
       - jq
       - loupe
@@ -66,6 +75,13 @@
     use: paru
     state: present
   become: no
+
+# ── GTK theme (dconf) ─────────────────────────────────────────────
+
+- name: Set GTK theme in dconf
+  ansible.builtin.command: gsettings set org.gnome.desktop.interface gtk-theme 'Gruvbox-Material-Dark'
+  become: no
+  changed_when: false
 
 # ── Plugins ──────────────────────────────────────────────────────
 # hyprpm requires a running Hyprland session, so plugin setup is handled by
