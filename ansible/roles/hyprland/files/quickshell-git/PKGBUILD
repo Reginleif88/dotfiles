@@ -2,12 +2,12 @@
 
 _pkgname=quickshell
 pkgname="$_pkgname-git"
-pkgver=0.2.0.r70.gdacfa9d
+pkgver=0.2.0.r1.g783b971
 pkgrel=1
 pkgdesc='Flexible toolkit for making desktop shells with QtQuick'
 arch=(x86_64 aarch64)
 url='https://git.outfoxxed.me/quickshell/quickshell'
-options=(!strip !lto)
+options=(!strip)
 license=('LGPL-3.0-only')
 depends=(
   'qt6-declarative'

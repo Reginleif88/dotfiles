@@ -26,6 +26,10 @@
       - network-manager-applet
       - blueman
       - tmux
+      - unzip
+      - unrar
+      - ripgrep
+      - nano-syntax-highlighting
     state: present
   become: yes
 

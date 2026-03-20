@@ -26,6 +26,7 @@
       - qt6-webengine
       - pwvucontrol
       - helvum
+      - pavucontrol
     state: present
   become: yes
 
