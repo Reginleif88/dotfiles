@@ -3,5 +3,4 @@ ansible/**
 bootstrap.sh
 README.md
 LICENSE
-.github/
 zen-browser/

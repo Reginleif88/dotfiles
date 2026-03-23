@@ -29,4 +29,4 @@ alias ll="ls -lah"
 alias la="ls -A"
 
 # PAI alias
-alias pai='bun /home/reginleif88/.claude/PAI/Tools/pai.ts'
+alias pai='bun $HOME/.claude/PAI/Tools/pai.ts'

@@ -2,18 +2,18 @@
 # zen-browser/user.js hash: {{ include "zen-browser/user.js" | sha256sum }}
 set -euo pipefail
 
-profile_dir=$(echo ~/.config/zen/*.Default*/)
+profile_dir=$(find ~/.config/zen -maxdepth 1 -type d -name "*.Default (release)" 2>/dev/null | head -1)
 
-if [ ! -d "$profile_dir" ]; then
+if [ -z "$profile_dir" ]; then
     echo "No Zen profile found, launching headless to generate one..."
     zen-browser --headless &
     ZEN_PID=$!
     sleep 10
     kill "$ZEN_PID" 2>/dev/null || true
-    profile_dir=$(echo ~/.config/zen/*.Default*/)
+    profile_dir=$(find ~/.config/zen -maxdepth 1 -type d -name "*.Default (release)" 2>/dev/null | head -1)
 fi
 
-if [ ! -d "$profile_dir" ]; then
+if [ -z "$profile_dir" ]; then
     echo "ERROR: Zen Browser default profile not found after headless launch" >&2
     exit 1
 fi

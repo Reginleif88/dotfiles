@@ -62,31 +62,11 @@
 
 # ── Stremio ──────────────────────────────────────────────────────
 
-- name: Ensure Flatpak is installed
-  community.general.pacman:
-    name: flatpak
-    state: present
-  become: yes
-
-- name: Add Flathub remote
-  community.general.flatpak_remote:
-    name: flathub
-    flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
-    state: present
-
 - name: Install Stremio (Flatpak)
   community.general.flatpak:
     name: com.stremio.Stremio
     remote: flathub
     state: present
-
-# ── Electron 33 ────────────────────────────────────────────────
-
-- name: Install Electron 33
-  kewlfft.aur.aur:
-    name: electron33-bin
-    state: present
-  become: no
 
 # ── JRE OpenJDK ────────────────────────────────────────────────
 
@@ -113,45 +93,6 @@
     name: escrcpy-bin
     state: present
   become: no
-
-# ── Podman Desktop ────────────────────────────────────────────
-
-- name: Install Podman
-  community.general.pacman:
-    name: podman
-    state: present
-  become: yes
-
-- name: Install Podman Desktop (Flatpak)
-  community.general.flatpak:
-    name: io.podman_desktop.PodmanDesktop
-    remote: flathub
-    state: present
-
-# ── Docker ────────────────────────────────────────────────────
-
-- name: Install Docker and Compose
-  community.general.pacman:
-    name:
-      - docker
-      - docker-compose
-      - docker-buildx
-    state: present
-  become: yes
-
-- name: Enable and start Docker service
-  ansible.builtin.systemd:
-    name: docker
-    enabled: yes
-    state: started
-  become: yes
-
-- name: Add user to docker group
-  ansible.builtin.user:
-    name: "{{ ansible_user_id }}"
-    groups: docker
-    append: yes
-  become: yes
 
 # ── EasyEffects ────────────────────────────────────────────────
 
@@ -180,3 +121,11 @@
     cmd: code --install-extension platformio.platformio-ide
   become: no
   changed_when: false
+
+# ── Obsidian ────────────────────────────────────────────────────
+
+- name: Install Obsidian
+  kewlfft.aur.aur:
+    name: obsidian
+    state: present
+  become: no

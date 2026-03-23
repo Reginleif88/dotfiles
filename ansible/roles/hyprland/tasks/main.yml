@@ -21,7 +21,6 @@
       - gvfs-mtp
       - udisks2
       - nwg-displays
-      - jq
       - loupe
       - qt6-webengine
       - pwvucontrol
@@ -30,44 +29,12 @@
     state: present
   become: yes
 
-# ── Quickshell (patched for QtWebEngine support) ─────────────────
-
-- name: Create quickshell-git build directory
-  ansible.builtin.tempfile:
-    state: directory
-    prefix: quickshell-git-
-    path: /var/tmp
-  register: qs_builddir
-
-- name: Copy patched quickshell-git PKGBUILD and files
-  ansible.builtin.copy:
-    src: quickshell-git/
-    dest: "{{ qs_builddir.path }}/"
-
-- name: Install quickshell-git AUR dependencies
-  kewlfft.aur.aur:
-    name:
-      - cpptrace
-    use: paru
-    state: present
-  become: no
-
-- name: Build and install patched quickshell-git
-  ansible.builtin.command:
-    cmd: makepkg -si --noconfirm
-    chdir: "{{ qs_builddir.path }}"
-  become: no
-
-- name: Clean up quickshell-git build directory
-  ansible.builtin.file:
-    path: "{{ qs_builddir.path }}"
-    state: absent
-
 # ── AUR packages ─────────────────────────────────────────────────
 
 - name: Install components from AUR
   kewlfft.aur.aur:
     name:
+      - quickshell-git
       - grimblast-git
       - cliphist
       - wl-clipboard
@@ -87,16 +54,6 @@
 # ── Plugins ──────────────────────────────────────────────────────
 # hyprpm requires a running Hyprland session, so plugin setup is handled by
 # ~/.config/hypr/hyprpm-setup.sh (exec-once) on first boot.
-
-# ── Build tools ───────────────────────────────────────────────────
-
-- name: Install build tools
-  community.general.pacman:
-    name:
-      - cpio
-      - cmake
-    state: present
-  become: yes
 
 # ── Walker (application launcher) ────────────────────────────────
 

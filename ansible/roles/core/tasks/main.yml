@@ -8,6 +8,24 @@
     validate: visudo -cf %s
   become: yes
 
+- name: Check if paru is installed
+  ansible.builtin.command: pacman -Qi paru
+  register: paru_check
+  failed_when: false
+  changed_when: false
+
+- name: Install paru from AUR
+  ansible.builtin.shell: |
+    tmpdir=$(mktemp -d)
+    git clone https://aur.archlinux.org/paru.git "$tmpdir"
+    cd "$tmpdir"
+    makepkg -si --noconfirm
+    rm -rf "$tmpdir"
+  args:
+    executable: /bin/bash
+  become: no
+  when: paru_check.rc != 0
+
 # ── System packages ───────────────────────────────────────────────
 - name: Install core packages
   community.general.pacman:
@@ -30,7 +48,27 @@
       - unrar
       - ripgrep
       - nano-syntax-highlighting
+      - kwallet
+      - kwallet-pam
+      - kwalletmanager
+      - jq
+      - cpio
+      - cmake
     state: present
+  become: yes
+
+- name: Configure PAM for KWallet auto-unlock (auth)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^auth.*system-local-login'
+    line: 'auth       optional     pam_kwallet5.so'
+  become: yes
+
+- name: Configure PAM for KWallet auto-unlock (session)
+  ansible.builtin.lineinfile:
+    path: /etc/pam.d/login
+    insertafter: '^session.*system-local-login'
+    line: 'session    optional     pam_kwallet5.so auto_start'
   become: yes
 
 - name: Create XDG user directories
