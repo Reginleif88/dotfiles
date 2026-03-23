@@ -1,3 +1,5 @@
+> This repository is now a **public archive**. I'm moving to NixOS - it was a nice experience building and maintaining this Arch/Hyprland setup, but it's time for something new.
+
 <div align="center">
 
 # dotfiles
